@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">MyBook</string>
+    <string name="default_book_title">Book\'s Title</string>
+    <string name="default_book_author">Authors\' Names</string>
+    <string name="default_book_publish_time">Publish Date</string>
+    <string name="error_notice_title">Network Error or No Data. \nPlease Check Internet and Try Again</string>
+</resources>

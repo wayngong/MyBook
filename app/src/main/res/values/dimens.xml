@@ -1,0 +1,14 @@
+<resources>
+    <!-- Default screen margins, per the Android Design guidelines. -->
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+
+    <dimen name="book_item_height">80dp</dimen>
+    <dimen name="book_item_padding">5dp</dimen>
+    <dimen name="book_cover_height">70dp</dimen>
+    <dimen name="book_cover_width">70dp</dimen>
+    <dimen name="book_title_text_size">18sp</dimen>
+    <dimen name="book_info_text_size">13sp</dimen>
+    <dimen name="book_authors_list_height">40dp</dimen>
+    <dimen name="book_authors_list_width">150dp</dimen>
+</resources>
