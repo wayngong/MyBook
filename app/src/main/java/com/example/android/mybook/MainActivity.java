@@ -12,7 +12,11 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -28,16 +32,23 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
+import static android.R.attr.bitmap;
+
 public class MainActivity extends AppCompatActivity {
 
     final int REQUEST_CODE_INTERNET = 200;
 
-    final String GOOGLE_BOOK_URL = "https://www.googleapis.com/books/v1/volumes?q=android&maxResults=10";
+    private String GOOGLE_BOOK_URL = "https://www.googleapis.com/books/v1/volumes?q=android&maxResults=7";
+
+    final String GOOGLE_BOOK_QUERY = "https://www.googleapis.com/books/v1/volumes?q=";
+
+    final String GOOGLE_BOOK_QUERY_MAX_RESULT = "&maxResults=7";
 
     /**
      * Tag for the log messages
@@ -49,9 +60,30 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Search Text
+        final EditText searchText = (EditText) findViewById(R.id.search_text);
 
-        BookAsyncTask task = new BookAsyncTask();
-        task.execute();
+        // Search Button
+        Button searchButton = (Button) findViewById(R.id.search_button);
+        searchButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Click to Search
+                formSearchUrl(searchText.getText().toString());
+                if (searchText.getText().toString() == null || searchText.getText().toString().equals("")) {
+                    // Search Text is null
+                    searchText.setHint(R.string.hint_search_text_no_key_word);
+                } else {
+                    // Search Text is not null
+                    BookAsyncTask bookAsyncTask = new BookAsyncTask();
+                    bookAsyncTask.execute();
+                }
+            }
+        });
+    }
+
+    private void formSearchUrl(String searchContent) {
+        GOOGLE_BOOK_URL = (GOOGLE_BOOK_QUERY + searchContent + GOOGLE_BOOK_QUERY_MAX_RESULT);
     }
 
     private class BookAsyncTask extends AsyncTask<URL, Void, ArrayList<Book>> {
@@ -61,25 +93,20 @@ public class MainActivity extends AppCompatActivity {
 
             // Perform HTTP request to the URL and receive a JSON response back
             String jsonResponse = "";
-            try {
-                // Make HttpURLConnection to get JSON Response
-                jsonResponse = makeHttpRequest(url);
-            } catch (IOException e) {
-                // TODO Handle the IOException
-                e.printStackTrace();
-            }
+            // Make HttpURLConnection to get JSON Response
+            jsonResponse = makeHttpRequest(url);
 
             // Extract relevant fields from the JSON response and create an {@link Event} object
             ArrayList<Book> booksArrayList = extractFeatureFromJson(jsonResponse);
 
             // Check if Book ArrayList is null
             // If so, initialize it
-            if(booksArrayList==null){
+            if (booksArrayList == null) {
                 booksArrayList = new ArrayList<>();
             }
             // Check If Book ArrayList is Empty
             // If so, create One Default Book for user
-            if(booksArrayList.size()==0){
+            if (booksArrayList.size() == 0) {
                 // Set Notice Info
                 String notice = getResources().getString(R.string.error_notice_title);
                 booksArrayList.add(new Book(notice, null, null));
@@ -108,27 +135,35 @@ public class MainActivity extends AppCompatActivity {
         /**
          * Make an HTTP request to the given URL and return a String as the response.
          */
-        private String makeHttpRequest(URL url) throws IOException {
+        private String makeHttpRequest(URL url) {
+            final int READ_TIME_OUT = 1000; /* milliseconds */
+            final int CONNECT_TIME_OUT = 5000; /* milliseconds */
+            final String REQUEST_MOTHOD_GET = "GET";
+
             String jsonResponse = "";
             HttpURLConnection urlConnection = null;
             InputStream inputStream = null;
 
             if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.INTERNET)
                     == PackageManager.PERMISSION_GRANTED) {
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
-                urlConnection.setReadTimeout(5000 /* milliseconds */);
-                urlConnection.setConnectTimeout(15000 /* milliseconds */);
-                urlConnection.connect();
-                if (urlConnection.getResponseCode() == REQUEST_CODE_INTERNET) {
-                    // Successful Response
-                    Log.i("Response Code", String.valueOf(REQUEST_CODE_INTERNET));
-                    inputStream = urlConnection.getInputStream();
-                    jsonResponse = readFromInputStream(inputStream);
-                } else {
-                    // when Internet Response Code is not correct,
-                    // use null
-                    jsonResponse = null;
+                try {
+                    urlConnection = (HttpURLConnection) url.openConnection();
+                    urlConnection.setRequestMethod(REQUEST_MOTHOD_GET);
+                    urlConnection.setReadTimeout(READ_TIME_OUT /* milliseconds */);
+                    urlConnection.setConnectTimeout(CONNECT_TIME_OUT /* milliseconds */);
+                    urlConnection.connect();
+                    if (urlConnection.getResponseCode() == REQUEST_CODE_INTERNET) {
+                        // Successful Response
+                        Log.i("Response Code", String.valueOf(REQUEST_CODE_INTERNET));
+                        inputStream = urlConnection.getInputStream();
+                        jsonResponse = readFromInputStream(inputStream);
+                    } else {
+                        // when Internet Response Code is not correct,
+                        // use null
+                        jsonResponse = null;
+                    }
+                } catch (IOException e) {
+                    Log.i(LOG_TAG, "makeHttpRequest Error, IOException");
                 }
             }
             return jsonResponse;
@@ -136,22 +171,25 @@ public class MainActivity extends AppCompatActivity {
 
         /* Download Image */
         private Bitmap downloadImage(URL url) {
+            final int READ_TIME_OUT = 2000; /* milliseconds */
+            final int CONNECT_TIME_OUT = 3000; /* milliseconds */
             HttpURLConnection urlConnection = null;
             Bitmap bitmap = null;
             try {
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setDoInput(true);
-                urlConnection.setReadTimeout(100000 /* milliseconds */);
-                urlConnection.setConnectTimeout(15000 /* milliseconds */);
+                urlConnection.setReadTimeout(READ_TIME_OUT /* milliseconds */);
+                urlConnection.setConnectTimeout(CONNECT_TIME_OUT /* milliseconds */);
                 urlConnection.connect();
                 if (urlConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                     // Connection Okay
                     // Start Downloading
+                    Log.i("Download Image:", String.valueOf(HttpURLConnection.HTTP_OK));
                     InputStream inputStream = urlConnection.getInputStream();
                     bitmap = BitmapFactory.decodeStream(inputStream);
                 }
             } catch (IOException e) {
-                Log.i(LOG_TAG, "Error Downloading Bitmap");
+                Log.i(LOG_TAG, "Error Downloading Bitmap, IOException");
             } finally {
                 if (urlConnection != null) {
                     urlConnection.disconnect();
@@ -178,15 +216,18 @@ public class MainActivity extends AppCompatActivity {
                     // Create Book class for Each Book
                     // Set Info for Each Book Class
                     JSONObject currentBook = booksArray.getJSONObject(i);
+                    // Check Whether JSON includes "volumeInfo"
                     JSONObject bookInfo = currentBook.getJSONObject("volumeInfo");
                     String bookTitle = bookInfo.getString("title");
 
                     // Get Book Authors
-                    JSONArray authors = bookInfo.getJSONArray("authors");
                     ArrayList<String> authorArrayList = new ArrayList<>();
-                    for (int j = 0; j < authors.length(); j++) {
-                        // get Book Authors String[]
-                        authorArrayList.add(authors.getString(j));
+                    if (bookInfo.has("authors")) {
+                        JSONArray authors = bookInfo.getJSONArray("authors");
+                        for (int j = 0; j < authors.length(); j++) {
+                            // get Book Authors String[]
+                            authorArrayList.add(authors.getString(j));
+                        }
                     }
 
                     // Get Book Publish Time
@@ -210,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
                     booksArrayList.add(book);
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
+                Log.i(LOG_TAG, "extractFeatureFromJson Error");
             }
             return booksArrayList;
         }
@@ -223,7 +264,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 url = new URL(stringUrl);
             } catch (MalformedURLException e) {
-                e.printStackTrace();
+                Log.i(LOG_TAG, "createUrl Error");
             }
             return url;
         }
@@ -243,7 +284,7 @@ public class MainActivity extends AppCompatActivity {
                         line = bufferedReader.readLine();
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.i(LOG_TAG, "readFromInputStream Error");
                 }
             }
             return stringBuilder.toString();

@@ -6,4 +6,6 @@
     <color name="colorListBackground">#FAFAFA</color>
     <color name="colorBookTitle">#424242</color>
     <color name="colorBookInfo">#BDBDBD</color>
+    <color name="colorSearchText">#FFFFFF</color>
+    <color name="colorSearchBackground">#757575</color>
 </resources>

@@ -55,8 +55,7 @@ public class BookListAdapter extends ArrayAdapter<Book> {
             if (!currentBook.getTitle().equals(mContext.getString(R.string.error_notice_title))) {
                 // Set Default Cover Image for Book
                 bookCover.setImageResource(R.drawable.default_cover);
-            }
-            else{
+            } else {
                 // Error Notice
                 // Set Image Size to Zero
                 ViewGroup.LayoutParams layoutParams = bookCover.getLayoutParams();
@@ -69,14 +68,20 @@ public class BookListAdapter extends ArrayAdapter<Book> {
         // Set Title for Book
         if (currentBook.hasTitle())
             bookTitle.setText(currentBook.getTitle());
+        else
+            bookTitle.setText(null);
 
         // Set Publish Time for Book
         if (currentBook.hasPublishTime())
             bookPublishTime.setText(currentBook.getPublishTime());
+        else
+            bookPublishTime.setText(null);
 
         // Author List
         if (currentBook.hasAuthor())
             bookAuthor.setText(currentBook.getAuthors().get(0));
+        else
+            bookAuthor.setText(null);
 
         return convertView;
     }
